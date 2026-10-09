@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Оракул Хиромантии — Анализ по фото</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #0a0618;
+    color: #e8d9a8;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  .stars {
+    position: fixed; inset: 0; z-index: -2;
+    background: radial-gradient(ellipse at top, #1a0f3d 0%, #0a0618 70%);
+  }
+  .stars::after {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(circle at 30% 20%, rgba(138,100,220,0.15), transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(180,140,80,0.1), transparent 50%);
+  }
+  .mist {
+    position: fixed; bottom:0; left:0; width:100%; height:40%;
+    background: linear-gradient(to top, rgba(80,60,120,0.4), transparent);
+    filter: blur(20px); z-index: -1;
+    animation: drift 15s ease-in-out infinite alternate;
+  }
+  @keyframes drift { from { transform: translateX(-20px); } to { transform: translateX(20px); } }
+
+  .container {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  .header-title {
+    font-size: 32px; letter-spacing: 5px; color: #c9a86a;
+    text-shadow: 0 0 20px rgba(201,168,106,0.8);
+    margin-bottom: 30px; text-align: center; font-style: italic;
+  }
+
+  .frame {
+    position: relative; padding: 30px;
+    background: linear-gradient(135deg, #8a6a30 0%, #d4a850 25%, #8a6a30 50%, #d4a850 75%, #8a6a30 100%);
+    border-radius: 8px;
+    box-shadow: 0 0 60px rgba(201,168,106,0.4), inset 0 0 30px rgba(0,0,0,0.5);
+    max-width: 600px; width: 100%; margin-bottom: 30px;
+  }
+  .frame::before { content: '☽ ✦ ☾'; position: absolute; top: 8px; left: 50%;
+    transform: translateX(-50%); color: #2a1f3d; font-size: 18px; letter-spacing: 15px; }
+  .corner { position: absolute; width: 30px; height: 30px; border: 3px solid #2a1f3d; }
+  .corner.tl { top:15px; left:15px; border-right:none; border-bottom:none; }
+  .corner.tr { top:15px; right:15px; border-left:none; border-bottom:none; }
+  .corner.bl { bottom:15px; left:15px; border-right:none; border-top:none; }
+  .corner.br { bottom:15px; right:15px; border-left:none; border-top:none; }
+
+  .board {
+    background: linear-gradient(135deg, #1a0f3d 0%, #2a1f5d 50%, #1a0f3d 100%);
+    border: 2px solid #3a2a5d; border-radius: 4px;
+    padding: 30px; min-height: 300px;
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.7);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .board::before { content:''; position:absolute; inset:0;
+    background: radial-gradient(ellipse at center, rgba(100,80,180,0.2), transparent 70%);
+    animation: pulse 3s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  .prompt {
+    font-size: 24px; text-align: center; color: #f0e6c0;
+    text-shadow: 0 0 15px rgba(240,230,192,0.6);
+    line-height: 1.4; position: relative; z-index: 2;
+    font-style: italic; margin-bottom: 25px;
+  }
+
+  .upload-area {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; gap: 15px;
+  }
+  .file-input { display: none; }
+  .upload-btn {
+    background: linear-gradient(135deg, #8a6a30, #d4a850, #8a6a30);
+    border: 2px solid #2a1f3d; color: #1a0f3d;
+    padding: 12px 30px; font-size: 18px;
+    font-family: 'Georgia', serif; font-weight: bold;
+    letter-spacing: 2px; cursor: pointer; border-radius: 4px;
+    transition: all 0.3s; text-transform: uppercase;
+  }
+  .upload-btn:hover { box-shadow: 0 0 30px rgba(212,168,80,0.7); transform: scale(1.05); }
+
+  .image-container {
+    position: relative; z-index: 2;
+    max-width: 100%; margin-top: 20px;
+    border: 2px solid #8a7040; border-radius: 4px;
+    overflow: hidden; display: none;
+    box-shadow: 0 0 30px rgba(212,168,80,0.3);
+  }
+  .image-container img {
+    max-width: 100%; max-height: 400px; display: block;
+    filter: sepia(0.3) contrast(1.1);
+  }
+  
+  /* Анимация сканирования */
+  .scanner {
+    position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+    background: linear-gradient(90deg, transparent, #00ffff, transparent);
+    box-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
+    animation: scan 3s ease-in-out infinite;
+    display: none;
+  }
+  @keyframes scan {
+    0% { top: 0; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .result {
+    position: relative; z-index: 2;
+    text-align: left; max-width: 100%;
+    line-height: 1.6; font-size: 15px;
+    color: #f0e6c0; display: none; width: 100%;
+    margin-top: 20px;
+  }
+  .result.show { display: block; animation: fadeIn 1.5s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+  .result h2 {
+    text-align: center; color: #d4a850; font-size: 22px;
+    margin-bottom: 15px; text-shadow: 0 0 10px rgba(212,168,80,0.5);
+    letter-spacing: 2px;
+  }
+  .result h3 {
+    color: #e8c9a8; font-size: 17px;
+    margin: 12px 0 6px; text-shadow: 0 0 8px rgba(232,201,168,0.4);
+    border-bottom: 1px solid #8a60a0; padding-bottom: 4px;
+  }
+  .result .section {
+    margin: 8px 0; padding: 10px 14px;
+    border-left: 3px solid #8a60a0;
+    background: rgba(30,20,60,0.4); border-radius: 0 4px 4px 0;
+  }
+  .result .section strong { color: #e8c9a8; }
+  .result .element-box {
+    text-align: center; font-size: 18px;
+    padding: 15px; margin: 15px 0;
+    background: rgba(40,30,70,0.6);
+    border: 1px solid #d4a850; border-radius: 4px;
+    color: #d4a850; font-weight: bold;
+    text-shadow: 0 0 10px rgba(212,168,80,0.5);
+  }
+
+  .error {
+    color: #ff8080; text-align: center; margin-top: 15px;
+    position: relative; z-index: 2; font-style: italic;
+  }
+
+  .candle { position: fixed; bottom: 15%; width: 20px; height: 80px;
+    background: linear-gradient(180deg, #f5e6c8, #d4b896);
+    border-radius: 3px; z-index: 1; box-shadow: 0 0 15px rgba(255,200,100,0.3); }
+  .candle::before { content:''; position:absolute; top:-15px; left:50%; transform:translateX(-50%);
+    width:12px; height:20px;
+    background: radial-gradient(ellipse at center, #fff5c0 0%, #ffaa40 40%, transparent 70%);
+    border-radius: 50% 50% 20% 20%; animation: flicker 2s ease-in-out infinite; filter: blur(1px); }
+  .candle::after { content:''; position:absolute; top:-25px; left:50%; transform:translateX(-50%);
+    width:40px; height:40px;
+    background: radial-gradient(circle, rgba(255,200,100,0.4), transparent 70%);
+    animation: flicker 2s ease-in-out infinite; }
+  .candle.left { left: 120px; } .candle.right { right: 120px; }
+  @keyframes flicker {
+    0%,100% { opacity:1; transform: translateX(-50%) scale(1); }
+    50% { opacity:0.8; transform: translateX(-50%) scale(1.1); }
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 20px; }
+    .frame { padding: 20px; }
+    .board { padding: 20px; }
+    .prompt { font-size: 20px; }
+    .candle { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="mist"></div>
+  <div class="candle left"></div>
+  <div class="candle right"></div>
+
+  <div class="container">
+    <div class="header-title">✦ ОРАКУЛ ХИРОМАНТИИ ✦</div>
+
+    <div class="frame">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+      
+      <div class="board">
+        <div class="prompt" id="prompt">
+          Загрузите фото вашей ладони,<br>и звезды прочитают ваши линии
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="fileInput" class="file-input" accept="image/*">
+          <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+            Открыть портал
+          </button>
+        </div>
+
+        <div class="image-container" id="imageContainer">
+          <img id="previewImg" src="" alt="Рука">
+          <div class="scanner" id="scanner"></div>
+        </div>
+
+        <div class="error" id="error"></div>
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Скрытый холст для анализа пикселей -->
+  <canvas id="analysisCanvas" style="display:none;"></canvas>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const previewImg = document.getElementById('previewImg');
+const imageContainer = document.getElementById('imageContainer');
+const scanner = document.getElementById('scanner');
+const resultDiv = document.getElementById('result');
+const errorDiv = document.getElementById('error');
+const canvas = document.getElementById('analysisCanvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+fileInput.addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    errorDiv.textContent = '✦ Это не изображение. Выберите фото руки. ✦';
+    return;
+  }
+
+  errorDiv.textContent = '';
+  resultDiv.classList.remove('show');
+  resultDiv.innerHTML = '';
+  
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    previewImg.src = event.target.result;
+    imageContainer.style.display = 'block';
+    document.getElementById('prompt').style.display = 'none';
+    document.getElementById('uploadArea').style.display = 'none';
+    scanner.style.display = 'block';
+    
+    // Запуск "магического" анализа
+    setTimeout(() => analyzeImage(event.target.result), 3000);
+  };
+  reader.readAsDataURL(file);
+});
+
+function analyzeImage(imgSrc) {
+  const img = new Image();
+  img.onload = function() {
+    // Масштабируем для быстрого анализа
+    const maxSize = 300;
+    let width = img.width;
+    let height = img.height;
+    if (width > height) {
+      if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+    } else {
+      if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    
+    let rSum = 0, gSum = 0, bSum = 0, brightnessSum = 0;
+    const pixelCount = data.length / 4;
+    const step = 10; // Анализируем каждый 10-й пиксель для скорости
+    
+    for (let i = 0; i < data.length; i += 4 * step) {
+      rSum += data[i];
+      gSum += data[i+1];
+      bSum += data[i+2];
+      brightnessSum += (data[i] + data[i+1] + data[i+2]) / 3;
+    }
+    
+    const samples = pixelCount / step;
+    const avgR = rSum / samples;
+    const avgG = gSum / samples;
+    const avgB = bSum / samples;
+    const avgBrightness = brightnessSum / samples;
+    
+    generateReading(avgR, avgG, avgB, avgBrightness);
+  };
+  img.src = imgSrc;
+}
+
+function generateReading(r, g, b, brightness) {
+  // Определение стихии по доминирующему цвету
+  let element, elementDesc, elementColor;
+  if (r > g + 20 && r > b) {
+    element = "ОГОНЬ 🔥";
+    elementDesc = "Ваша рука излучает теплую, активную энергию. Вы — человек страсти, действия и лидерства.";
+    elementColor = "#ff8040";
+  } else if (b > r + 20 && b > g) {
+    element = "ВОДА ";
+    elementDesc = "Ваша рука несет прохладную, глубокую энергию. Вы — интуит, эмпат, хранитель тайн.";
+    elementColor = "#60a0ff";
+  } else if (g > r && g > b) {
+    element = "ЗЕМЛЯ 🌿";
+    elementDesc = "Ваша рука излучает стабильную, целительную энергию. Вы — практик, опора и защитник.";
+    elementColor = "#80c060";
+  } else {
+    element = "ВОЗДУХ 🌪️";
+    elementDesc = "Ваша рука несет легкую, интеллектуальную энергию. Вы — мыслитель, коммуникатор и новатор.";
+    elementColor = "#e0e0ff";
+  }
+
+  // Анализ линий на основе яркости и контраста
+  let lifeLine, heartLine, headLine, fateLine;
+  
+  if (brightness > 160) {
+    lifeLine = "Линия Жизни глубокая и светлая. Ваша жизненная сила бьет ключом, вы обладаете огромным запасом энергии и устойчивым иммунитетом. Судьба благоволит вашим начинаниям.";
+    fateLine = "Линия Судьбы четко прослеживается. Вы сами кузнец своего счастья, ваш путь освещен, и вы быстро достигаете поставленных целей.";
+  } else if (brightness > 100) {
+    lifeLine = "Линия Жизни ровная и спокойная. У вас гармоничный запас сил, вы умеете беречь энергию и направлять ее в нужное русло. Ваше здоровье стабильно.";
+    fateLine = "Линия Судьбы имеет мягкие изгибы. Ваш путь не прямолинеен, но полон интересных поворотов. Успех приходит через адаптивность.";
+  } else {
+    lifeLine = "Линия Жизни таит в себе скрытые резервы. Вы можете казаться спокойным, но внутри вас дремлет огромная сила, которая пробуждается в кризисные моменты.";
+    fateLine = "Линия Судьбы скрыта в тенях. Ваше предназначение не лежит на поверхности — вы должны сами найти свой уникальный путь через интуицию и самопознание.";
+  }
+
+  const contrast = Math.abs(r - b) + Math.abs(g - b);
+  if (contrast > 100) {
+    heartLine = "Линия Сердца яркая и контрастная. Вы любите глубоко, страстно и без оглядки. Ваши эмоции — ваш главный компас, но берегите сердце от бурь.";
+    headLine = "Линия Головы четкая и острая. У вас аналитический склад ума, вы быстро схватываете суть вещей и не боитесь принимать жесткие решения.";
+  } else {
+    heartLine = "Линия Сердца мягкая и плавная. Вы тонко чувствуете людей, склонны к компромиссам и гармонии. Ваша любовь — это тихая гавань и поддержка.";
+    headLine = "Линия Головы размыта и творческа. Вы мыслите образами, обладаете богатым воображением и часто находите нестандартные решения там, где другие заходят в тупик.";
+  }
+
+  // Формирование вывода
+  const html = `
+    <h2>✦ ВАШ НУМЕРОЛОГИЧЕСКИЙ ПОРТРЕТ РУКИ ✦</h2>
+    <div class="element-box" style="border-color: ${elementColor}; color: ${elementColor};">
+      Стихия вашей руки: ${element}
+    </div>
+    <div class="section">
+      <strong>Энергетический спектр:</strong> ${elementDesc}
+    </div>
+    <h3> Чтение основных линий</h3>
+    <div class="section">
+      <strong>Линия Жизни:</strong> ${lifeLine}
+    </div>
+    <div class="section">
+      <strong>Линия Сердца:</strong> ${heartLine}
+    </div>
+    <div class="section">
+      <strong>Линия Головы:</strong> ${headLine}
+    </div>
+    <div class="section">
+      <strong>Линия Судьбы:</strong> ${fateLine}
+    </div>
+    <div class="section" style="border-left-color: #d4a850; background: rgba(40,30,70,0.6);">
+      <strong>Совет Оракула:</strong> ${getAdvice(element, brightness)}
+    </div>
+    <button class="upload-btn" style="margin-top:20px; font-size:14px; padding:10px 20px;" onclick="location.reload()">
+      Прочитать другую руку
+    </button>
+  `;
+
+  scanner.style.display = 'none';
+  resultDiv.innerHTML = html;
+  resultDiv.classList.add('show');
+}
+
+function getAdvice(element, brightness) {
+  const advices = {
+    "ОГОНЬ 🔥": "Ваша стихия требует выхода. Не подавляйте свои амбиции, но учитесь согревать других, а не сжигать. Найдите дело, где нужна ваша харизма.",
+    "ВОДА 🌊": "Ваша интуиция — ваш дар. Доверяйте своим снам и предчувствиям. Окружайте себя природой и очищайте разум от информационного шума.",
+    "ЗЕМЛЯ 🌿": "Вы — фундамент для других. Не забывайте заботиться о себе, иначе рискуете отдать все силы и остаться у разбитого корыта. Практикуйте заземление.",
+    "ВОЗДУХ 🌪️": "Ваши идеи меняют мир. Не застревайте в планировании — начинайте действовать. Делитесь знаниями, но не разбрасывайтесь на мелочи."
+  };
+  
+  if (brightness < 80) return "Сегодня ваша энергия скрыта. Это день для медитации, уединения и работы с подсознанием. Не принимайте важных решений.";
+  if (brightness > 200) return "Сегодня ваша энергия на пике! Действуйте решительно, заявляйте о себе, начинайте новые проекты. Вселенная слышит вас.";
+  return advices[element];
+}
+</script>
+</body>
+</html>
